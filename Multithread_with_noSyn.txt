@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+int private_variable1 = 1, private_variable2 = 10;
+void *worker_thread(void *arg) {
+    int thread_number = *(int *)arg;
+    free(arg);
+
+    printf("Thread %d đang thực hiện công việc...\n", thread_number);
+
+    
+
+    // Thực hiện công việc trên tài nguyên riêng của thread
+    switch (thread_number) {
+        case 1:
+            for (int i = 0; i < 1000; i++) {
+                private_variable1 += private_variable2;
+            }
+             // In kết quả từ tài nguyên riêng của thread
+            printf("Kết quả từ tài nguyên riêng của Thread1 %d: %d\n", thread_number, private_variable1);
+            break;
+        case 2:
+            for (int i = 0; i < 1000; i++) {
+                private_variable2 += private_variable1;
+            }
+             // In kết quả từ tài nguyên riêng của thread
+            printf("Kết quả từ tài nguyên riêng của Thread2 %d: %d\n", thread_number, private_variable2);
+            break;
+        // Add more cases for other threads and tasks if needed
+        default:
+            printf("Thread %d không có công việc cụ thể.\n", thread_number);
+            break;
+    }
+
+   
+
+    // Kết thúc thread con
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t thread1, thread2;
+    int *thread_arg1 = (int *)malloc(sizeof(int));
+    int *thread_arg2 = (int *)malloc(sizeof(int));
+
+    *thread_arg1 = 1;
+    *thread_arg2 = 2;
+
+    // Tạo thread 1
+    if (pthread_create(&thread1, NULL, worker_thread, thread_arg1) != 0) {
+        perror("Lỗi khi tạo thread 1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Tạo thread 2
+    if (pthread_create(&thread2, NULL, worker_thread, thread_arg2) != 0) {
+        perror("Lỗi khi tạo thread 2");
+        exit(EXIT_FAILURE);
+    }
+
+    // Chờ các thread kết thúc
+    if (pthread_join(thread1, NULL) != 0) {
+        perror("Lỗi khi chờ thread 1");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_join(thread2, NULL) != 0) {
+        perror("Lỗi khi chờ thread 2");
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;
+}

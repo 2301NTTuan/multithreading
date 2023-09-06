@@ -1,0 +1,60 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define NUM_THREADS 5
+#define ARRAY_SIZE 10
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int shared_array[ARRAY_SIZE] = {0};
+
+void *worker_thread(void *arg) {
+    int thread_number = *(int *)arg;
+    free(arg);
+
+    printf("Thread %d đang thực hiện công việc...\n", thread_number);
+
+    // Lock mutex trước khi truy cập và thay đổi tài nguyên chung (mảng shared_array)
+    pthread_mutex_lock(&mutex);
+
+    // Thực hiện công việc trên tài nguyên chung (mảng shared_array)
+    for (int i = 0; i < ARRAY_SIZE; i++) {
+        shared_array[i] += (thread_number * (i + 1));
+    }
+
+    // Unlock mutex sau khi hoàn thành thao tác trên tài nguyên chung
+    pthread_mutex_unlock(&mutex);
+
+    // Kết thúc thread con
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int *thread_number = malloc(sizeof(int));
+        *thread_number = i;
+        if (pthread_create(&threads[i], NULL, worker_thread, thread_number) != 0) {
+            fprintf(stderr, "Lỗi khi tạo thread %d\n", i);
+            exit(1);
+        }
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        if (pthread_join(threads[i], NULL) != 0) {
+            fprintf(stderr, "Lỗi khi join thread %d\n", i);
+            exit(1);
+        }
+    }
+
+    printf("Kết quả cuối cùng từ tài nguyên chung (mảng shared_array):\n");
+    for (int i = 0; i < ARRAY_SIZE; i++) {
+        printf("%d ", shared_array[i]);
+    }
+    printf("\n");
+
+    pthread_mutex_destroy(&mutex);
+
+    return 0;
+}
